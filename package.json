@@ -1,0 +1,44 @@
+{
+  "name": "2gis-playable",
+  "version": "1.0.0",
+  "description": "HTML5 playable ad for 2GIS with 3D map navigation",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "build:mintegral-portrait": "cross-env AD_NETWORK=mintegral ORIENTATION=portrait npm run build",
+    "build:mintegral-landscape": "cross-env AD_NETWORK=mintegral ORIENTATION=landscape npm run build",
+    "build:unity-portrait": "cross-env AD_NETWORK=unity ORIENTATION=portrait npm run build",
+    "build:unity-landscape": "cross-env AD_NETWORK=unity ORIENTATION=landscape npm run build",
+    "build:bigo-portrait": "cross-env AD_NETWORK=bigo ORIENTATION=portrait npm run build",
+    "build:bigo-landscape": "cross-env AD_NETWORK=bigo ORIENTATION=landscape npm run build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix"
+  },
+  "keywords": [
+    "playable",
+    "ad",
+    "2gis",
+    "html5",
+    "threejs"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@smoud/playable-sdk": "^1.0.20",
+    "three": "^0.160.0",
+    "three-stdlib": "^2.36.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.160.0",
+    "@typescript-eslint/eslint-plugin": "^6.19.0",
+    "@typescript-eslint/parser": "^6.19.0",
+    "cross-env": "^7.0.3",
+    "eslint": "^8.56.0",
+    "terser": "^5.44.0",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.11",
+    "vite-plugin-singlefile": "^2.3.0"
+  }
+}

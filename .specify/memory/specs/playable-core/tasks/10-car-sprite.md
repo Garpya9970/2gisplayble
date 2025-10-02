@@ -33,3 +33,80 @@
 
 ## Оценка
 ~1.5 часа
+
+## История изменений
+
+### Восстановление класса (02.10.2025)
+- **Проблема**: Файл `CarSprite.ts` был случайно очищен/удалён
+- **Решение**: Класс полностью восстановлен на основе использования в `MapScene.ts`
+- **Реализация**:
+  - Загрузка GLB модели (`hatchback-sports.glb`) с текстурой `colormap.png`
+  - Параллельная загрузка модели и текстуры через `Promise.all`
+  - Метод `waitForModelLoad()` для синхронизации с `MapScene.init()`
+  - Автонормализация: масштаб до 3.5 единиц, центрирование, поворот `rotation.y = Math.PI`
+  - Корректная ориентация: машинка стоит бампером вперёд
+
+### Исправление высоты машинки (02.10.2025)
+- **Проблема**: Машинка "проваливалась" в текстуры дороги
+- **Причины**:
+  1. Дорога находится на высоте Y=0.05
+  2. Машинка изначально была на Y=0
+  3. При движении Y-координата менялась из-за waypoints
+- **Решение**:
+  - Установлена фиксированная высота **Y = 0.6** над дорогой
+  - Движение происходит только по X и Z (горизонтали)
+  - Y фиксируется в трёх местах:
+    - Конструктор: `position = new THREE.Vector3(0, 0.6, 0)`
+    - `setPosition()`: `position.y = 0.6`
+    - `update()`: `position.y = 0.6` перед обновлением mesh
+- **Улучшения**:
+  - Расстояние вычисляется по 2D: `Math.sqrt(dx*dx + dz*dz)`
+  - Направление движения игнорирует Y: `targetFlat = new THREE.Vector3(x, this.position.y, z)`
+  - Устранены "подергивания" при движении
+
+### Формат модели
+- **Окончательный выбор**: GLB (hatchback-sports.glb) из Kenney Car Kit
+- **Причины**:
+  - Компактный формат с инлайн-геометрией
+  - Поддержка текстур через `colormap.png`
+  - Правильные цвета при явной загрузке текстуры
+  - Удаление vertex colors для корректного рендеринга
+- **Альтернативы (не сработали)**:
+  - OBJ: требует отдельный MTL, проблемы с цветами
+  - Встроенные текстуры в GLB: перезаписывались vertex colors
+
+### Код восстановленного класса
+```typescript
+// src/game/CarSprite.ts
+export default class CarSprite {
+  private mesh: THREE.Group;
+  private position: THREE.Vector3;
+  private route: THREE.Vector3[] = [];
+  private currentWaypointIndex = 0;
+  private speed = 5; // units per second
+  private onArrival?: () => void;
+  private isMoving = false;
+  private modelLoaded = false;
+  
+  constructor(options: CarSpriteOptions = {}) {
+    this.mesh = new THREE.Group();
+    this.position = new THREE.Vector3(0, 0.6, 0); // Фиксированная высота
+    this.onArrival = options.onArrival;
+    this.loadPromise = this.loadCarModel();
+  }
+  
+  public async waitForModelLoad(): Promise<void> { }
+  public getMesh(): THREE.Group { }
+  public setPosition(position: THREE.Vector3): void {
+    this.position.x = position.x;
+    this.position.z = position.z;
+    this.position.y = 0.6; // Фиксированная высота
+  }
+  public getPosition(): THREE.Vector3 { }
+  public moveTo(route: THREE.Vector3[]): void { }
+  public update(deltaTime: number): void {
+    // Движение только по X и Z
+    // Y всегда = 0.6
+  }
+}
+```

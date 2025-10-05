@@ -55,7 +55,7 @@ export class ConfettiEffect {
         size: Math.random() * 8 + 4,
         speedX: Math.random() * 4 - 2,
         speedY: Math.random() * 3 + 2,
-        color: colors[Math.floor(Math.random() * colors.length)],
+        color: colors[Math.floor(Math.random() * colors.length)] || '#00CA5D',
         rotation: Math.random() * 360,
         rotationSpeed: Math.random() * 10 - 5,
         gravity: 0.2,
@@ -68,6 +68,7 @@ export class ConfettiEffect {
 
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const p = this.particles[i];
+      if (!p) continue;
       
       // Обновление позиции
       p.speedY += p.gravity;

@@ -18,7 +18,7 @@ export interface GameUICallbacks {
 export class GameUI {
   private container: HTMLElement;
   private callbacks: GameUICallbacks;
-  private currentScreen: UIScreen = 'start';
+  // currentScreen удален - не используется
 
   // UI элементы
   private startScreen?: HTMLElement;
@@ -58,7 +58,7 @@ export class GameUI {
         <div class="ui-logo-container">
           <img src="${logoUrl}" alt="2ГИС" class="ui-logo" />
         </div>
-        <h1 class="ui-title">Выбери маршрут<br>без сюрпризов</h1>
+        <h1 class="ui-title">Выберите маршрут<br>без сюрпризов</h1>
       </div>
     `;
 
@@ -141,7 +141,7 @@ export class GameUI {
           <img src="${logoUrl}" alt="2ГИС" class="ui-endcard-logo-img" />
         </div>
         <h2 class="ui-endcard-title">Отличный выбор!</h2>
-        <p class="ui-endcard-text">В 2ГИС всегда найдёшь маршрут без лишних сложностей</p>
+        <p class="ui-endcard-text">В 2ГИС вы всегда найдёте маршрут без лишних сложностей</p>
         <button class="ui-cta-button">
           Скачать 2ГИС
         </button>
@@ -190,7 +190,6 @@ export class GameUI {
    * Показать стартовый экран
    */
   public showStartScreen(): void {
-    this.currentScreen = 'start';
     this.startScreen?.classList.remove('ui-hidden');
     this.routeButtons?.classList.remove('ui-hidden');
     
@@ -218,8 +217,6 @@ export class GameUI {
    * Показать модалку с пробкой
    */
   public showTrafficModal(): void {
-    this.currentScreen = 'modal-traffic';
-    
     // Останавливаем звук двигателя
     this.sounds.stopCarEngine();
     
@@ -243,8 +240,6 @@ export class GameUI {
    * Показать модалку с ремонтными работами
    */
   public showRoadworkModal(): void {
-    this.currentScreen = 'modal-roadwork';
-    
     // Останавливаем звук двигателя
     this.sounds.stopCarEngine();
     
@@ -282,8 +277,6 @@ export class GameUI {
    * Показать end-card
    */
   public showEndcard(): void {
-    this.currentScreen = 'endcard';
-    
     // Останавливаем звук двигателя
     this.sounds.stopCarEngine();
     
@@ -307,8 +300,6 @@ export class GameUI {
    * Белый fade-эффект и перезапуск
    */
   private playFadeAndRestart(): void {
-    this.currentScreen = 'fade';
-    
     // Показываем белый экран
     this.fadeOverlay?.classList.add('ui-fade-active');
     

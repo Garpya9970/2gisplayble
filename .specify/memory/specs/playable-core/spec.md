@@ -17,10 +17,13 @@
 ## Адаптив (обязательно)
 - 3D: `OrthographicCamera`; viewport рассчитывается по aspect ratio; сцена всегда помещается полностью.
 - Canvas: `renderer.setPixelRatio(1)` для точного соответствия CSS размерам; `position: fixed` + `100dvh` для заполнения viewport.
-- Динамическая геометрия: земля и дороги рассчитываются от границ камеры (`camera.left/right/top/bottom`) с коэффициентом запаса (scale=2 для земли, extendFactor=3 для дорог).
+- Динамическая геометрия: земля и дороги рассчитываются от границ камеры (`camera.left/right/top/bottom`) с коэффициентом запаса (scale=4 для земли, extendFactor=30 для дорог).
 - Resize: двойная обработка — события SDK (prod) + `window.resize` (fallback, debounce 100ms) с пересчётом геометрии земли/дорог через `geometry.dispose()`.
-- Фон сцены: `scene.background` совпадает с цветом земли (#2c3e50) для бесшовного отображения.
-- UI (HUD/CTA): только `clamp()` + `vw/vh/em/rem`; `safe-area` обязателен.
+- Фон сцены: `scene.background` совпадает с цветом земли (#7bc74d) для бесшовного отображения.
+- **UI (HUD/CTA): только `clamp()` + `vmin/vh` (БЕЗ px и rem!)**; `safe-area` обязателен.
+  - Portrait: `vmin` (меньшая сторона viewport)
+  - Landscape: `vh` (высота viewport, не vmax!)
+  - Пример: `clamp(12vmin, 20vmin, 25vmin)` для кнопок в portrait, `clamp(10vh, 15vh, 20vh)` в landscape
 
 ## События (абстрактные имена)
 - Обязательные: `game_start`, `first_interact`, `level_complete { win, time_ms }`, `cta_click`, `error { code, detail? }`.

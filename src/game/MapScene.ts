@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three-stdlib';
 import ThreeRenderer from '@/renderer/ThreeRenderer';
-import playableSDK from '@/sdk-wrapper';
+// playableSDK удален - управление через UI кнопки
+// import playableSDK from '@/sdk-wrapper';
 import CarSprite from './CarSprite';
 import { createWaypointMarkers, getWaypointPosition } from './MapWaypoints';
 import { getGameConfig, getCurrentOrientation, type Orientation } from './GameConfig';
@@ -63,10 +64,12 @@ export interface MapSceneOptions { }
 export default class MapScene {
   private scene: THREE.Scene;
   private camera: THREE.OrthographicCamera;
-  private raycaster: THREE.Raycaster;
-  private pointer: THREE.Vector2;
-  private interactiveMeshes: Array<{ id: RouteId; mesh: THREE.Mesh }>; 
-  private firstInteractFired = false;
+  // raycaster, pointer, interactiveMeshes, firstInteractFired, canvas удалены - управление через UI кнопки
+  // private raycaster: THREE.Raycaster;
+  // private pointer: THREE.Vector2;
+  // private interactiveMeshes: Array<{ id: RouteId; mesh: THREE.Mesh }>; 
+  // private firstInteractFired = false;
+  // private canvas!: HTMLCanvasElement;
   private onRouteSelected?: (route: RouteId) => void;
   private onRouteCompleteCallback?: (route: RouteId, success: boolean) => void;
   private selectedRoute?: RouteId;
@@ -75,7 +78,6 @@ export default class MapScene {
   private crossRoad?: THREE.Mesh;
   private zLine?: THREE.Mesh;
   private xLine?: THREE.Mesh;
-  private canvas!: HTMLCanvasElement;
   private car?: CarSprite;
   private deltaTime = 0;
   private lastTime = performance.now();
@@ -89,13 +91,14 @@ export default class MapScene {
   ) {
     this.scene = this.renderer.getScene();
     this.camera = this.renderer.getCamera();
-    this.raycaster = new THREE.Raycaster();
-    this.pointer = new THREE.Vector2();
-    this.interactiveMeshes = [];
+    // raycaster, pointer, interactiveMeshes удалены - управление через UI кнопки
+    // this.raycaster = new THREE.Raycaster();
+    // this.pointer = new THREE.Vector2();
+    // this.interactiveMeshes = [];
   }
 
-  public async init(container: HTMLElement): Promise<void> {
-    this.canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
+  public async init(_container: HTMLElement): Promise<void> {
+    // canvas удален - управление через UI кнопки
     this.buildGround();
     
     // Ждём загрузки дорог (критически важно)
@@ -111,7 +114,8 @@ export default class MapScene {
       createWaypointMarkers(this.scene, 0xff00ff);
     }
     
-    this.attachPointerHandlers(container);
+    // attachPointerHandlers удален - управление только через UI кнопки
+    // this.attachPointerHandlers(container);
     
     // Визуализируем сетку координат для ручного размещения (включается через DEBUG_MODE)
     if (DEBUG_MODE) {
@@ -332,8 +336,8 @@ export default class MapScene {
     this.camera.updateMatrixWorld(true);
   }
 
-  public dispose(container: HTMLElement): void {
-    container.removeEventListener('pointerdown', this.handlePointerDown);
+  public dispose(_container: HTMLElement): void {
+    // removeEventListener удален - управление только через UI кнопки
   }
 
   private buildGround(): void {
@@ -490,7 +494,8 @@ export default class MapScene {
     const straightCurve = new THREE.CatmullRomCurve3(this.routePoints.straight);
     const straightMesh = this.createRouteMesh(straightCurve, 0x2ecc71, tubeRadius, tubeRadialSegments);
     this.scene.add(straightMesh);
-    this.interactiveMeshes.push({ id: 'straight', mesh: straightMesh });
+    // interactiveMeshes удален - управление через UI кнопки
+    // this.interactiveMeshes.push({ id: 'straight', mesh: straightMesh });
 
     // Маршрут «налево» (желтый): с низу до перекрёстка, затем по X- (налево)
     this.routePoints.left = [
@@ -503,7 +508,8 @@ export default class MapScene {
     const leftCurve = new THREE.CatmullRomCurve3(this.routePoints.left);
     const leftMesh = this.createRouteMesh(leftCurve, 0xf1c40f, tubeRadius, tubeRadialSegments);
     this.scene.add(leftMesh);
-    this.interactiveMeshes.push({ id: 'left', mesh: leftMesh });
+    // interactiveMeshes удален - управление через UI кнопки
+    // this.interactiveMeshes.push({ id: 'left', mesh: leftMesh });
 
     // Маршрут «направо» (красный): с низу до перекрёстка, затем по X+ (направо)
     this.routePoints.right = [
@@ -516,7 +522,8 @@ export default class MapScene {
     const rightCurve = new THREE.CatmullRomCurve3(this.routePoints.right);
     const rightMesh = this.createRouteMesh(rightCurve, 0xe74c3c, tubeRadius, tubeRadialSegments);
     this.scene.add(rightMesh);
-    this.interactiveMeshes.push({ id: 'right', mesh: rightMesh });
+    // interactiveMeshes удален - управление через UI кнопки
+    // this.interactiveMeshes.push({ id: 'right', mesh: rightMesh });
   }
 
   private async buildCar(): Promise<void> {
@@ -586,9 +593,10 @@ export default class MapScene {
     return mesh;
   }
 
-  private attachPointerHandlers(container: HTMLElement): void {
-    container.addEventListener('pointerdown', this.handlePointerDown);
-  }
+  // attachPointerHandlers удален - управление только через UI кнопки
+  // private attachPointerHandlers(container: HTMLElement): void {
+  //   container.addEventListener('pointerdown', this.handlePointerDown);
+  // }
 
   private startCarMovement(routeId: RouteId): void {
     if (!this.car || this.isCarMoving) return;
@@ -639,32 +647,33 @@ export default class MapScene {
     this.car.moveTo(route);
   }
 
-  private handlePointerDown = (event: PointerEvent) => {
-    const rect = this.canvas.getBoundingClientRect();
-    const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-    this.pointer.set(x, y);
-
-    this.raycaster.setFromCamera(this.pointer, this.camera);
-    const meshes = this.interactiveMeshes.map((m) => m.mesh);
-    const intersects = this.raycaster.intersectObjects(meshes, false);
-
-    if (intersects.length > 0) {
-      const picked = intersects[0]!.object as THREE.Mesh;
-      const item = this.interactiveMeshes.find((i) => i.mesh === picked);
-      if (item) {
-        if (!this.firstInteractFired) {
-          playableSDK.trackCustomEvent('first_interact');
-          this.firstInteractFired = true;
-        }
-        
-        // Запустить машинку по выбранному маршруту
-        this.startCarMovement(item.id);
-        
-        if (this.onRouteSelected) this.onRouteSelected(item.id);
-      }
-    }
-  };
+  // handlePointerDown удален - управление только через UI кнопки
+  // private handlePointerDown = (event: PointerEvent) => {
+  //   const rect = this.canvas.getBoundingClientRect();
+  //   const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  //   const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  //   this.pointer.set(x, y);
+  //
+  //   this.raycaster.setFromCamera(this.pointer, this.camera);
+  //   const meshes = this.interactiveMeshes.map((m) => m.mesh);
+  //   const intersects = this.raycaster.intersectObjects(meshes, false);
+  //
+  //   if (intersects.length > 0) {
+  //     const picked = intersects[0]!.object as THREE.Mesh;
+  //     const item = this.interactiveMeshes.find((i) => i.mesh === picked);
+  //     if (item) {
+  //       if (!this.firstInteractFired) {
+  //         playableSDK.trackCustomEvent('first_interact');
+  //         this.firstInteractFired = true;
+  //       }
+  //       
+  //       // Запустить машинку по выбранному маршруту
+  //       this.startCarMovement(item.id);
+  //       
+  //       if (this.onRouteSelected) this.onRouteSelected(item.id);
+  //     }
+  //   }
+  // };
 
   /**
    * Загружает модели зданий (для ручного размещения)

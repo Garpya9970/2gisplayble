@@ -185,6 +185,13 @@ class PlayableSDKWrapper {
   }
 
   /**
+   * Алиас для install() - клик по CTA кнопке
+   */
+  public clickCTA(): void {
+    this.install();
+  }
+
+  /**
    * Трекинг кастомных событий
    * (level_complete, error, и другие специфичные для нашего playable)
    */

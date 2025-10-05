@@ -8,10 +8,39 @@ import carEngineUrl from '@/assets/zvuk-machine.mp3?url';
 export class GameSounds {
   private audioContext?: AudioContext;
   private carEngineAudio?: HTMLAudioElement;
+  private isInitialized = false;
 
   constructor() {
     // Создаем AudioContext только при первом взаимодействии
     // (из-за autoplay политики браузеров)
+  }
+
+  /**
+   * Инициализация аудио при первом взаимодействии пользователя
+   * (обход autoplay политики браузеров)
+   */
+  public initAudio(): void {
+    if (this.isInitialized) return;
+    
+    try {
+      // Инициализируем AudioContext
+      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      
+      // Создаем аудио элемент для двигателя
+      if (!this.carEngineAudio) {
+        this.carEngineAudio = new Audio(carEngineUrl);
+        this.carEngineAudio.loop = false;
+        this.carEngineAudio.volume = 0.4;
+        this.carEngineAudio.preload = 'auto';
+        // Пробуем загрузить файл
+        this.carEngineAudio.load();
+      }
+      
+      this.isInitialized = true;
+      console.log('[Sounds] Audio initialized');
+    } catch (error) {
+      console.warn('[Sounds] Could not initialize audio:', error);
+    }
   }
 
   private getAudioContext(): AudioContext {
@@ -106,18 +135,24 @@ export class GameSounds {
    */
   public startCarEngine(): void {
     try {
-      // Создаем или переиспользуем Audio элемент
+      // Инициализируем аудио если еще не сделали
+      this.initAudio();
+      
       if (!this.carEngineAudio) {
-        this.carEngineAudio = new Audio(carEngineUrl);
-        this.carEngineAudio.loop = false;
-        this.carEngineAudio.volume = 0.4;
+        console.warn('[Sounds] Car engine audio not initialized');
+        return;
       }
       
       // Перезапускаем с начала если уже играет
       this.carEngineAudio.currentTime = 0;
-      this.carEngineAudio.play().catch(err => {
-        console.warn('[Sounds] Could not play car engine:', err);
-      });
+      
+      // Играем звук
+      const playPromise = this.carEngineAudio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(err => {
+          console.warn('[Sounds] Could not play car engine:', err);
+        });
+      }
 
       console.log('[Sounds] Car engine started');
     } catch (error) {

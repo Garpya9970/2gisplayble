@@ -15,6 +15,7 @@
 import playableSDK from './sdk-wrapper';
 import ThreeRenderer from './renderer/ThreeRenderer';
 import MapScene from './game/MapScene';
+import { GameUI } from './ui/GameUI';
 
 console.log('🚀 2GIS Playable Ad - Starting...');
 console.log(`📱 Network: ${import.meta.env.VITE_AD_NETWORK}`);
@@ -97,9 +98,48 @@ async function initRenderer(width: number, height: number) {
       const map = new MapScene(renderer);
       await map.init(document.getElementById('app') as HTMLElement);
       map.resize(); // Принудительное обновление фона под актуальный размер
-      map.onSelect((route) => {
-        console.log('[Map] Selected route:', route);
-        // TODO: запустить движение машинки (Task 10), начать отсчёт времени, и по завершении — level_complete
+
+      // Создание UI
+      const appContainer = document.getElementById('app') as HTMLElement;
+      const gameUI = new GameUI(appContainer, {
+        onRouteSelect: (route) => {
+          console.log('[UI] Route selected:', route);
+          // Передаем выбор в MapScene
+          map.selectRoute(route);
+        },
+        onRetry: () => {
+          console.log('[UI] Retry requested');
+          // Перезапускаем игру
+          map.reset();
+        },
+        onCTA: () => {
+          console.log('[UI] CTA clicked');
+          // Трекаем клик и открываем ссылку
+          playableSDK.clickCTA();
+        }
+      });
+
+      // Показываем стартовый экран
+      gameUI.showStartScreen();
+
+      // Подключаем коллбэк завершения маршрута из MapScene
+      map.onRouteComplete((route, success) => {
+        console.log('[Map] Route completed:', route, 'success:', success);
+        
+        if (route === 'left' && !success) {
+          // Показываем модалку с пробкой
+          gameUI.showTrafficModal();
+        } else if (route === 'straight' && !success) {
+          // Показываем модалку с ремонтными работами
+          gameUI.showRoadworkModal();
+        } else if (route === 'right' && success) {
+          // Показываем end-card
+          gameUI.showEndcard();
+          // Трекаем завершение уровня
+          if (playableSDK.ready) {
+            playableSDK.finish();
+          }
+        }
       });
 
     // Обработка resize через SDK

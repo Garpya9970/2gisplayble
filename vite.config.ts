@@ -9,6 +9,11 @@ export default defineConfig({
       useRecommendedBuildConfig: true, // Использовать рекомендуемую конфигурацию
     }),
   ],
+  server: {
+    host: '0.0.0.0', // Доступ из локальной сети для тестирования на мобильных
+    port: 5173,
+    strictPort: false,
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

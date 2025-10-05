@@ -68,6 +68,8 @@ export default class MapScene {
   private interactiveMeshes: Array<{ id: RouteId; mesh: THREE.Mesh }>; 
   private firstInteractFired = false;
   private onRouteSelected?: (route: RouteId) => void;
+  private onRouteCompleteCallback?: (route: RouteId, success: boolean) => void;
+  private selectedRoute?: RouteId;
   private ground?: THREE.Mesh;
   private mainRoad?: THREE.Mesh;
   private crossRoad?: THREE.Mesh;
@@ -236,6 +238,54 @@ export default class MapScene {
 
   public onSelect(handler: (route: RouteId) => void): void {
     this.onRouteSelected = handler;
+  }
+
+  /**
+   * Выбор маршрута из UI
+   */
+  public selectRoute(route: RouteId): void {
+    this.selectedRoute = route;
+    this.startCarMovement(route);
+    
+    // Сохраняем для обратной совместимости
+    if (this.onRouteSelected) {
+      this.onRouteSelected(route);
+    }
+  }
+
+  /**
+   * Регистрация коллбэка завершения маршрута
+   */
+  public onRouteComplete(callback: (route: RouteId, success: boolean) => void): void {
+    this.onRouteCompleteCallback = callback;
+  }
+
+  /**
+   * Перезапуск игры (возврат машинки на старт)
+   */
+  public reset(): void {
+    if (!this.car) return;
+    
+    // Получаем текущую конфигурацию
+    const width = this.camera.right - this.camera.left;
+    const height = this.camera.top - this.camera.bottom;
+    const config = getGameConfig(width, height);
+    
+    // Возвращаем машинку на старт
+    this.car.setPosition(config.carStartPosition);
+    this.isCarMoving = false;
+    this.selectedRoute = undefined;
+    
+    // Возвращаем камеру в начальную позицию
+    const carPos = this.car.getPosition();
+    const cameraOffset = 10;
+    this.camera.position.x = carPos.x;
+    this.camera.position.z = carPos.z + cameraOffset;
+    this.camera.lookAt(carPos.x, 0, carPos.z);
+    this.camera.updateProjectionMatrix();
+    this.camera.updateMatrixWorld(true);
+    
+    console.log('[MapScene] Game reset');
   }
 
   public update(): void {
@@ -481,7 +531,12 @@ export default class MapScene {
       onArrival: () => {
         console.log('[MapScene] Car arrived at destination');
         this.isCarMoving = false;
-        // TODO: показать end-card или перезапустить игру (Task 13, 15)
+        
+        // Определяем успешность маршрута
+        if (this.selectedRoute && this.onRouteCompleteCallback) {
+          const success = this.selectedRoute === 'right'; // Только правый маршрут успешен
+          this.onRouteCompleteCallback(this.selectedRoute, success);
+        }
       }
     });
     

@@ -134,6 +134,15 @@ export default class CarSprite {
   }
 
   /**
+   * Сбрасывает ротацию машины (смотрит прямо вверх)
+   */
+  public resetRotation(): void {
+    // Сбрасываем ротацию mesh к исходному состоянию (смотрит вверх)
+    this.mesh.rotation.set(0, 0, 0);
+    console.log('[CarSprite] Rotation reset to forward (up)');
+  }
+
+  /**
    * Запускает движение по маршруту
    */
   public moveTo(route: THREE.Vector3[]): void {

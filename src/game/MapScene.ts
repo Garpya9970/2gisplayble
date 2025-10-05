@@ -277,6 +277,7 @@ export default class MapScene {
     
     // Возвращаем машинку на старт
     this.car.setPosition(config.carStartPosition);
+    this.car.resetRotation(); // Сбрасываем ротацию (смотрит прямо вверх)
     this.isCarMoving = false;
     this.selectedRoute = undefined;
     

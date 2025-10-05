@@ -2,6 +2,11 @@
  * GameUI - управление всем UI плейбла
  */
 
+import { ConfettiEffect } from './confetti';
+import { GameSounds } from './sounds';
+// @ts-ignore
+import logoUrl from '@/assets/logo.png?url';
+
 export type UIScreen = 'start' | 'playing' | 'modal-traffic' | 'modal-roadwork' | 'endcard' | 'fade';
 
 export interface GameUICallbacks {
@@ -23,9 +28,14 @@ export class GameUI {
   private endcard?: HTMLElement;
   private fadeOverlay?: HTMLElement;
 
+  // Эффекты и звуки
+  private confetti?: ConfettiEffect;
+  private sounds: GameSounds;
+
   constructor(container: HTMLElement, callbacks: GameUICallbacks) {
     this.container = container;
     this.callbacks = callbacks;
+    this.sounds = new GameSounds();
     this.init();
   }
 
@@ -45,7 +55,10 @@ export class GameUI {
     this.startScreen.className = 'ui-start-screen';
     this.startScreen.innerHTML = `
       <div class="ui-header">
-        <h1 class="ui-title">Выбери маршрут без сюрпризов</h1>
+        <div class="ui-logo-container">
+          <img src="${logoUrl}" alt="2ГИС" class="ui-logo" />
+        </div>
+        <h1 class="ui-title">Выбери маршрут<br>без сюрпризов</h1>
       </div>
     `;
 
@@ -125,7 +138,7 @@ export class GameUI {
     this.endcard.innerHTML = `
       <div class="ui-endcard-content">
         <div class="ui-endcard-logo">
-          <div class="ui-logo-placeholder">2ГИС</div>
+          <img src="${logoUrl}" alt="2ГИС" class="ui-endcard-logo-img" />
         </div>
         <h2 class="ui-endcard-title">Отличный выбор!</h2>
         <p class="ui-endcard-text">В 2ГИС всегда найдёшь маршрут без лишних сложностей</p>
@@ -157,8 +170,20 @@ export class GameUI {
    * Обработчик выбора маршрута
    */
   private onRouteButtonClick(route: 'left' | 'straight' | 'right'): void {
+    this.sounds.playClick();
     this.hideStartScreen();
+    
+    // Запускаем звук двигателя
+    this.sounds.startCarEngine();
+    
     this.callbacks.onRouteSelect(route);
+  }
+
+  /**
+   * Останавливает звук двигателя (публичный метод)
+   */
+  public stopCarEngine(): void {
+    this.sounds.stopCarEngine();
   }
 
   /**
@@ -194,6 +219,13 @@ export class GameUI {
    */
   public showTrafficModal(): void {
     this.currentScreen = 'modal-traffic';
+    
+    // Останавливаем звук двигателя
+    this.sounds.stopCarEngine();
+    
+    // Проигрываем звук проигрыша
+    this.sounds.playDefeat();
+    
     this.modalTraffic?.classList.remove('ui-modal-hidden');
     requestAnimationFrame(() => {
       this.modalTraffic?.classList.add('ui-modal-visible');
@@ -212,6 +244,13 @@ export class GameUI {
    */
   public showRoadworkModal(): void {
     this.currentScreen = 'modal-roadwork';
+    
+    // Останавливаем звук двигателя
+    this.sounds.stopCarEngine();
+    
+    // Проигрываем звук проигрыша
+    this.sounds.playDefeat();
+    
     this.modalRoadwork?.classList.remove('ui-modal-hidden');
     requestAnimationFrame(() => {
       this.modalRoadwork?.classList.add('ui-modal-visible');
@@ -244,10 +283,24 @@ export class GameUI {
    */
   public showEndcard(): void {
     this.currentScreen = 'endcard';
-    this.endcard?.classList.remove('ui-endcard-hidden');
-    requestAnimationFrame(() => {
-      this.endcard?.classList.add('ui-endcard-visible');
-    });
+    
+    // Останавливаем звук двигателя
+    this.sounds.stopCarEngine();
+    
+    // Запускаем конфетти
+    this.confetti = new ConfettiEffect();
+    this.confetti.start(this.container);
+    
+    // Проигрываем звук победы
+    this.sounds.playVictory();
+    
+    // Показываем end-card с небольшой задержкой
+    setTimeout(() => {
+      this.endcard?.classList.remove('ui-endcard-hidden');
+      requestAnimationFrame(() => {
+        this.endcard?.classList.add('ui-endcard-visible');
+      });
+    }, 200);
   }
 
   /**
@@ -276,6 +329,12 @@ export class GameUI {
     this.endcard?.classList.remove('ui-endcard-visible');
     this.endcard?.classList.add('ui-endcard-hidden');
     this.fadeOverlay?.classList.remove('ui-fade-active');
+    
+    // Останавливаем конфетти если оно было запущено
+    if (this.confetti) {
+      this.confetti.stop();
+      this.confetti = undefined;
+    }
   }
 }
 

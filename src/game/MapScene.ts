@@ -161,6 +161,12 @@ export default class MapScene {
     this.addBuilding("a", 3.5, 25, 2.5, 90);   // справа, Z=25
     this.addBuilding("d", -3.5, 25, 2.5, 270); // слева, Z=25
     
+    this.addBuilding("b", 3.5, 29, 2.5, 90);   // справа, Z=29
+    this.addBuilding("g", -3.5, 29, 2.5, 270); // слева, Z=29
+    
+    this.addBuilding("h", 3.5, 33, 2.5, 90);   // справа, Z=33
+    this.addBuilding("c", -3.5, 33, 2.5, 270); // слева, Z=33
+    
     // ===== ВЕРХНЯЯ ЧАСТЬ ВЕРТИКАЛЬНОЙ ДОРОГИ (после перекрёстка) =====
     // Такие же отступы, другие модели
     
@@ -182,6 +188,12 @@ export default class MapScene {
     
     this.addBuilding("d", 3.5, -25, 2.5, 90);   // справа, Z=-25
     this.addBuilding("a", -3.5, -25, 2.5, 270); // слева, Z=-25
+    
+    this.addBuilding("c", 3.5, -29, 2.5, 90);   // справа, Z=-29
+    this.addBuilding("e", -3.5, -29, 2.5, 270); // слева, Z=-29
+    
+    this.addBuilding("g", 3.5, -33, 2.5, 90);   // справа, Z=-33
+    this.addBuilding("f", -3.5, -33, 2.5, 270); // слева, Z=-33
     
     // ===== ПРАВАЯ ГОРИЗОНТАЛЬНАЯ ДОРОГА =====
     // Здания вдоль правой горизонтальной дороги (начинаем с X=9, пропускаем X=5 чтобы не пересекаться)
@@ -265,8 +277,9 @@ export default class MapScene {
     // Камера должна смотреть на машинку (создает наклон)
     this.camera.lookAt(carPos.x, 0, carPos.z);
     
-    // Обновляем матрицы камеры
+    // Обновляем матрицы камеры (критично для правильного раскастинга)
     this.camera.updateProjectionMatrix();
+    this.camera.updateMatrixWorld(true);
   }
 
   public dispose(container: HTMLElement): void {
@@ -278,8 +291,8 @@ export default class MapScene {
     const width = this.camera.right - this.camera.left;
     const height = this.camera.top - this.camera.bottom;
     
-    // Коэффициент запаса: земля больше видимой области в 2 раза
-    const scale = 2;
+    // Коэффициент запаса: земля больше видимой области в 4 раза (для изометрического вида)
+    const scale = 4;
     const planeGeo = new THREE.PlaneGeometry(width * scale, height * scale);
     const planeMat = new THREE.MeshStandardMaterial({ 
       color: 0x7bc74d, // яркий травяной цвет
@@ -304,7 +317,7 @@ export default class MapScene {
   private buildPrimitiveRoads(): void {
     const width = this.camera.right - this.camera.left;
     const height = this.camera.top - this.camera.bottom;
-    const extendFactor = 3;
+    const extendFactor = 30; // огромный запас для изометрического вида (камера далеко от центра)
 
     // Материал дороги (тёмно-серый асфальт)
     const roadMaterial = new THREE.MeshStandardMaterial({
@@ -491,6 +504,10 @@ export default class MapScene {
     // Камера должна смотреть на машинку (создает наклон)
     this.camera.lookAt(carPos.x, 0, carPos.z);
     
+    // Обновляем матрицы камеры (критично для правильного раскастинга)
+    this.camera.updateProjectionMatrix();
+    this.camera.updateMatrixWorld(true);
+    
     console.log('[MapScene] Camera initialized at car position:', { 
       carPos: { x: carPos.x, y: carPos.y, z: carPos.z },
       cameraPos: { x: this.camera.position.x, y: this.camera.position.y, z: this.camera.position.z }
@@ -615,16 +632,16 @@ export default class MapScene {
     });
     
     // ===== ВЕРТИКАЛЬНАЯ ДОРОГА =====
-    // Правая бетонная полоса (под зданиями)
-    const rightConcreteGeo = new THREE.PlaneGeometry(5, height * 3);
+    // Правая бетонная полоса (под зданиями) - увеличена для портрета
+    const rightConcreteGeo = new THREE.PlaneGeometry(5, height * 8);
     const rightConcrete = new THREE.Mesh(rightConcreteGeo, concreteMat);
     rightConcrete.rotation.x = -Math.PI / 2;
     rightConcrete.position.set(3.5, 0.01, 0);
     rightConcrete.receiveShadow = true;
     this.scene.add(rightConcrete);
     
-    // Левая бетонная полоса (под зданиями)
-    const leftConcreteGeo = new THREE.PlaneGeometry(5, height * 3);
+    // Левая бетонная полоса (под зданиями) - увеличена для портрета
+    const leftConcreteGeo = new THREE.PlaneGeometry(5, height * 8);
     const leftConcrete = new THREE.Mesh(leftConcreteGeo, concreteMat);
     leftConcrete.rotation.x = -Math.PI / 2;
     leftConcrete.position.set(-3.5, 0.01, 0);
@@ -632,16 +649,16 @@ export default class MapScene {
     this.scene.add(leftConcrete);
     
     // ===== ГОРИЗОНТАЛЬНАЯ ДОРОГА =====
-    // Верхняя бетонная полоса (под зданиями)
-    const topConcreteGeo = new THREE.PlaneGeometry(width * 3, 5);
+    // Верхняя бетонная полоса (под зданиями) - увеличена для альбома
+    const topConcreteGeo = new THREE.PlaneGeometry(width * 8, 5);
     const topConcrete = new THREE.Mesh(topConcreteGeo, concreteMat);
     topConcrete.rotation.x = -Math.PI / 2;
     topConcrete.position.set(0, 0.01, 3.5);
     topConcrete.receiveShadow = true;
     this.scene.add(topConcrete);
     
-    // Нижняя бетонная полоса (под зданиями)
-    const bottomConcreteGeo = new THREE.PlaneGeometry(width * 3, 5);
+    // Нижняя бетонная полоса (под зданиями) - увеличена для альбома
+    const bottomConcreteGeo = new THREE.PlaneGeometry(width * 8, 5);
     const bottomConcrete = new THREE.Mesh(bottomConcreteGeo, concreteMat);
     bottomConcrete.rotation.x = -Math.PI / 2;
     bottomConcrete.position.set(0, 0.01, -3.5);
@@ -1274,6 +1291,10 @@ export default class MapScene {
         
         // Камера должна смотреть на машинку (создает наклон)
         this.camera.lookAt(carPos.x, 0, carPos.z);
+        
+        // Обновляем матрицы камеры
+        this.camera.updateProjectionMatrix();
+        this.camera.updateMatrixWorld(true);
       }
       
       // Адаптация позиции пробки
@@ -1326,14 +1347,14 @@ export default class MapScene {
 
     // Обновляем землю под новый viewport камеры
     if (this.ground) {
-      const scale = 2;
+      const scale = 4; // совпадает с buildGround()
       const newGeo = new THREE.PlaneGeometry(width * scale, height * scale);
       this.ground.geometry.dispose();
       this.ground.geometry = newGeo;
     }
 
     // Обновляем дороги и разметку под новый вьюпорт (только примитивы)
-    const extendFactor = 3;
+    const extendFactor = 30; // совпадает с buildPrimitiveRoads()
     
     if (this.mainRoad && (this.mainRoad as THREE.Mesh).geometry) {
       const newMainGeo = new THREE.BoxGeometry(3.5, 0.1, height * extendFactor);

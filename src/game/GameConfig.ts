@@ -28,12 +28,12 @@ export const GAME_CONFIG: Record<Orientation, GameOrientationConfig> = {
     // Стартовая позиция: текущая (start-3, Z=20)
     carStartPosition: getWaypointPosition('start-3'),
     
-    // Препятствия
-    obstacleLeftPosition: getPositionBetween('road-left-1', 'road-left-2'), // Пробка слева
+    // Препятствия (синхронизировано с landscape)
+    obstacleLeftPosition: getPositionBetween('road-left-3', 'road-left-4'), // Пробка слева
     obstacleStraightPosition: getPositionBetween('road-top-1', 'road-top-2'), // Экскаватор сверху
     
-    // Остановка машинки чуть раньше препятствий
-    stopLeftPosition: getPositionBetween('road-left-1', 'road-left-2', 0.4),
+    // Остановка машинки чуть раньше препятствий (синхронизировано с landscape)
+    stopLeftPosition: getPositionBetween('road-left-3', 'road-left-4', 0.4),
     stopStraightPosition: getPositionBetween('road-top-1', 'road-top-2', 0.4),
   },
   

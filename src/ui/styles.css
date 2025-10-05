@@ -70,9 +70,9 @@
 /* ========== КНОПКИ МАРШРУТОВ ========== */
 .ui-route-buttons {
   position: absolute;
-  bottom: max(60px, env(safe-area-inset-bottom, 60px));
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate(-50%, 50%);
   display: flex;
   gap: clamp(12px, 3vw, 20px);
   padding: 0 20px;
@@ -96,8 +96,8 @@
   border-radius: 16px;
   color: white;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  font-size: clamp(12px, 3vw, 14px);
-  font-weight: 600;
+  font-size: clamp(14px, 3.5vw, 16px);
+  font-weight: 700;
   cursor: pointer;
   box-shadow: 
     0 8px 24px rgba(0, 0, 0, 0.8),
@@ -105,6 +105,7 @@
     0 4px 16px rgba(0, 202, 93, 0.5);
   transition: all 0.3s ease;
   animation: buttonPulse 2s ease-in-out infinite;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .ui-route-btn:hover {
@@ -356,12 +357,24 @@
 
 /* Ландшафт (альбомная ориентация) */
 @media (orientation: landscape) {
-  .ui-title {
-    font-size: clamp(18px, 4vw, 24px);
+  .ui-start-screen {
+    padding: max(10px, env(safe-area-inset-top, 10px)) 20px 20px 20px;
   }
   
-  .ui-route-buttons {
-    bottom: max(40px, env(safe-area-inset-bottom, 40px));
+  .ui-header {
+    padding: clamp(10px, 2vw, 20px) 20px;
+  }
+  
+  .ui-logo-container {
+    margin-bottom: clamp(8px, 2vw, 12px);
+  }
+  
+  .ui-logo {
+    width: clamp(100px, 25vw, 140px);
+  }
+  
+  .ui-title {
+    font-size: clamp(14px, 3vw, 18px);
   }
   
   .ui-route-btn {

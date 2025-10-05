@@ -19,7 +19,7 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
-  assetsInclude: ['**/*.obj', '**/*.mtl', '**/*.FBX', '**/*.glb', '**/*.gltf'], // Разрешить импорт OBJ/MTL/FBX/GLB файлов
+  assetsInclude: ['**/*.obj', '**/*.mtl', '**/*.FBX', '**/*.glb', '**/*.gltf', '**/*.mp3'], // Разрешить импорт OBJ/MTL/FBX/GLB/MP3 файлов
   build: {
     target: 'es2020',
     outDir: 'dist',

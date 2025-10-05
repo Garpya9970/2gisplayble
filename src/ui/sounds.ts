@@ -1,11 +1,13 @@
 /**
- * Звуки для игры (генерируются через Web Audio API)
+ * Звуки для игры (генерируются через Web Audio API + файлы)
  */
+
+// @ts-ignore
+import carEngineUrl from '@/assets/zvuk-machine.mp3?url';
 
 export class GameSounds {
   private audioContext?: AudioContext;
-  private carEngineGain?: GainNode;
-  private carEngineOscillator?: OscillatorNode;
+  private carEngineAudio?: HTMLAudioElement;
 
   constructor() {
     // Создаем AudioContext только при первом взаимодействии
@@ -100,27 +102,22 @@ export class GameSounds {
   }
 
   /**
-   * Запускает звук двигателя машины (непрерывный)
+   * Запускает звук двигателя машины (из файла)
    */
   public startCarEngine(): void {
     try {
-      const ctx = this.getAudioContext();
+      // Создаем или переиспользуем Audio элемент
+      if (!this.carEngineAudio) {
+        this.carEngineAudio = new Audio(carEngineUrl);
+        this.carEngineAudio.loop = false;
+        this.carEngineAudio.volume = 0.4;
+      }
       
-      // Создаем низкочастотный гул двигателя
-      this.carEngineOscillator = ctx.createOscillator();
-      this.carEngineGain = ctx.createGain();
-      
-      this.carEngineOscillator.connect(this.carEngineGain);
-      this.carEngineGain.connect(ctx.destination);
-      
-      this.carEngineOscillator.type = 'sawtooth';
-      this.carEngineOscillator.frequency.value = 80; // Низкая частота для звука двигателя
-      
-      // Плавное нарастание звука
-      this.carEngineGain.gain.setValueAtTime(0, ctx.currentTime);
-      this.carEngineGain.gain.linearRampToValueAtTime(0.15, ctx.currentTime + 0.3);
-      
-      this.carEngineOscillator.start();
+      // Перезапускаем с начала если уже играет
+      this.carEngineAudio.currentTime = 0;
+      this.carEngineAudio.play().catch(err => {
+        console.warn('[Sounds] Could not play car engine:', err);
+      });
 
       console.log('[Sounds] Car engine started');
     } catch (error) {
@@ -133,19 +130,19 @@ export class GameSounds {
    */
   public stopCarEngine(): void {
     try {
-      if (this.carEngineOscillator && this.carEngineGain) {
-        const ctx = this.getAudioContext();
-        
-        // Плавное затухание
-        this.carEngineGain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.3);
-        
-        setTimeout(() => {
-          if (this.carEngineOscillator) {
-            this.carEngineOscillator.stop();
-            this.carEngineOscillator = undefined;
-            this.carEngineGain = undefined;
+      if (this.carEngineAudio) {
+        // Плавное затухание через volume
+        const fadeOut = setInterval(() => {
+          if (this.carEngineAudio && this.carEngineAudio.volume > 0.05) {
+            this.carEngineAudio.volume -= 0.05;
+          } else {
+            if (this.carEngineAudio) {
+              this.carEngineAudio.pause();
+              this.carEngineAudio.volume = 0.4; // Восстанавливаем громкость
+            }
+            clearInterval(fadeOut);
           }
-        }, 300);
+        }, 50);
 
         console.log('[Sounds] Car engine stopped');
       }

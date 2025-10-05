@@ -361,6 +361,10 @@
 
 /* Ландшафт (альбомная ориентация) - используем vh (высота viewport) */
 @media (orientation: landscape) {
+  .ui-header {
+    padding: 0 2.5vmin; /* Убрали весь верхний padding - заголовок у самого верха */
+  }
+  
   .ui-logo {
     width: clamp(15vh, 25vh, 35vh);
   }

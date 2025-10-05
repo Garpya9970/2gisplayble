@@ -109,12 +109,20 @@ async function initRenderer(width: number, height: number) {
         },
         onRetry: () => {
           console.log('[UI] Retry requested');
+          // Mintegral: вызываем gameRetry()
+          if (typeof (window as any).gameRetry === 'function') {
+            (window as any).gameRetry();
+          }
           // Перезапускаем игру
           map.reset();
         },
         onCTA: () => {
           console.log('[UI] CTA clicked');
-          // Трекаем клик и открываем ссылку
+          // Mintegral: ОБЯЗАТЕЛЬНО вызываем install()
+          if (typeof (window as any).install === 'function') {
+            (window as any).install();
+          }
+          // Трекаем клик через SDK (fallback)
           playableSDK.clickCTA();
         }
       });
@@ -125,6 +133,11 @@ async function initRenderer(width: number, height: number) {
       // Подключаем коллбэк завершения маршрута из MapScene
       map.onRouteComplete((route, success) => {
         console.log('[Map] Route completed:', route, 'success:', success);
+        
+        // Mintegral: вызываем gameEnd() при любом завершении (победа/поражение)
+        if (typeof (window as any).gameEnd === 'function') {
+          (window as any).gameEnd();
+        }
         
         if (route === 'left' && !success) {
           // Показываем модалку с пробкой
@@ -180,6 +193,11 @@ async function initRenderer(width: number, height: number) {
     
     // Имитация загрузки ассетов (замените на реальную загрузку)
     setTimeout(() => {
+      // Mintegral: уведомляем что все ресурсы загружены
+      if (typeof (window as any).gameReady === 'function') {
+        (window as any).gameReady();
+      }
+      
       // Task 16 - Event game_start ✅
       // start() автоматически вызовет trackCustomEvent('game_start')
       if (playableSDK.ready) {

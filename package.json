@@ -6,12 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "build:mintegral-portrait": "cross-env AD_NETWORK=mintegral ORIENTATION=portrait npm run build",
-    "build:mintegral-landscape": "cross-env AD_NETWORK=mintegral ORIENTATION=landscape npm run build",
-    "build:unity-portrait": "cross-env AD_NETWORK=unity ORIENTATION=portrait npm run build",
-    "build:unity-landscape": "cross-env AD_NETWORK=unity ORIENTATION=landscape npm run build",
-    "build:bigo-portrait": "cross-env AD_NETWORK=bigo ORIENTATION=portrait npm run build",
-    "build:bigo-landscape": "cross-env AD_NETWORK=bigo ORIENTATION=landscape npm run build",
+    "build:mintegral": "npm run build && tsc && vite build --config vite.config.mintegral.ts",
+    "build:bigo": "npm run build && tsc && vite build --config vite.config.bigo.ts",
     "preview": "vite preview",
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix"

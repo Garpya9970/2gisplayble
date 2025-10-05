@@ -22,7 +22,7 @@ export class ThreeRenderer {
   private isInitialized = false;
 
   // Базовый размер сцены (для масштабирования)
-  private readonly BASE_VIEW_SIZE = 10; // Уменьшен для zoom-in эффекта
+  private readonly BASE_VIEW_SIZE = 5; // Уменьшен для приближения камеры
 
   // Callbacks
   private onRenderCallback?: () => void;

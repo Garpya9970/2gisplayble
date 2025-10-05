@@ -32,6 +32,30 @@ import lightSquareUrl from '@/assets/roads/Models/GLB format/light-square.glb?ur
 // @ts-ignore
 import roadsTextureUrl from '@/assets/roads/Models/GLB format/Textures/colormap.png?url';
 
+// Импорты машин для пробки
+// @ts-ignore
+import sedanUrl from '@/assets/car/Models/GLB format/sedan.glb?url';
+// @ts-ignore
+import suvUrl from '@/assets/car/Models/GLB format/suv.glb?url';
+// @ts-ignore
+import taxiUrl from '@/assets/car/Models/GLB format/taxi.glb?url';
+// @ts-ignore
+import carTextureUrl from '@/assets/car/Models/GLB format/Textures/colormap.png?url';
+
+// Импорт экскаватора для правого препятствия
+// @ts-ignore
+import tractorShovelUrl from '@/assets/car/Models/GLB format/tractor-shovel.glb?url';
+
+/**
+ * DEBUG MODE - включает визуализацию для отладки:
+ * - Желтые маркеры waypoints (розовые сферы)
+ * - Текстовые метки с координатами
+ * - Сетку координат (GridHelper)
+ * 
+ * Чтобы включить отладку: установите DEBUG_MODE = true
+ */
+const DEBUG_MODE = false;
+
 type RouteId = 'left' | 'straight' | 'right';
 
 export interface MapSceneOptions { }
@@ -55,6 +79,8 @@ export default class MapScene {
   private lastTime = performance.now();
   private currentOrientation: Orientation = 'portrait';
   private isCarMoving = false;
+  private trafficJam?: THREE.Group; // Пробка на левой дороге
+  private roadObstacle?: THREE.Group; // Экскаватор и разбитая дорога справа
 
   constructor(
     private renderer: ThreeRenderer
@@ -78,13 +104,17 @@ export default class MapScene {
     // Ждём загрузки машины (критически важно)
     await this.buildCar();
     
-    // Визуализация waypoints для отладки (розовые сферы)
-    createWaypointMarkers(this.scene, 0xff00ff);
+    // Визуализация waypoints для отладки (включается через DEBUG_MODE)
+    if (DEBUG_MODE) {
+      createWaypointMarkers(this.scene, 0xff00ff);
+    }
     
     this.attachPointerHandlers(container);
     
-    // Визуализируем сетку координат для ручного размещения
-    this.buildCoordinateGrid();
+    // Визуализируем сетку координат для ручного размещения (включается через DEBUG_MODE)
+    if (DEBUG_MODE) {
+      this.buildCoordinateGrid();
+    }
     
     // Загружаем модели зданий и добавляем первое здание
     await this.loadBuildingModels().catch(err => {
@@ -102,6 +132,12 @@ export default class MapScene {
     
     // Добавляем фонари на углах перекрестка
     await this.addStreetLights();
+    
+    // Добавляем пробку на левой дороге
+    await this.addTrafficJam();
+    
+    // Добавляем препятствие на правой дороге (экскаватор + разбитая дорога)
+    await this.addRoadObstacle();
     
     // ===== НИЖНЯЯ ЧАСТЬ ВЕРТИКАЛЬНОЙ ДОРОГИ (до перекрёстка) =====
     // Расстояние между рядами = 4 единицы, здания ближе к дороге (X = ±3.5)
@@ -199,7 +235,38 @@ export default class MapScene {
     // Обновление машинки
     if (this.car) {
       this.car.update(this.deltaTime);
+      
+      // Камера следует за машинкой (для ортографической камеры)
+      this.updateCameraFollow();
     }
+  }
+
+  /**
+   * Обновляет позицию камеры для следования за машиной
+   * Для ортографической камеры смещаем центр камеры к позиции машины
+   */
+  private updateCameraFollow(): void {
+    if (!this.car) return;
+
+    const carPos = this.car.getPosition();
+    const lerpFactor = 0.1; // плавность следования (0.05-0.15)
+    
+    // Смещение камеры для изометрического вида (позади и выше машинки)
+    const cameraOffset = 10; // смещение позади машинки по оси Z
+    
+    // Целевая позиция камеры (позади машинки для угла обзора)
+    const targetX = carPos.x;
+    const targetZ = carPos.z + cameraOffset; // смещаем назад
+    
+    // Плавное перемещение камеры к целевой позиции
+    this.camera.position.x += (targetX - this.camera.position.x) * lerpFactor;
+    this.camera.position.z += (targetZ - this.camera.position.z) * lerpFactor;
+    
+    // Камера должна смотреть на машинку (создает наклон)
+    this.camera.lookAt(carPos.x, 0, carPos.z);
+    
+    // Обновляем матрицы камеры
+    this.camera.updateProjectionMatrix();
   }
 
   public dispose(container: HTMLElement): void {
@@ -413,14 +480,37 @@ export default class MapScene {
     
     // Ждём загрузки 3D-модели машины
     await this.car.waitForModelLoad();
+    
+    // Сразу центрируем камеру на машинке (без lerp при инициализации)
+    const carPos = this.car.getPosition();
+    const cameraOffset = 10; // смещение позади машинки для изометрического вида
+    
+    this.camera.position.x = carPos.x;
+    this.camera.position.z = carPos.z + cameraOffset; // позади машинки
+    
+    // Камера должна смотреть на машинку (создает наклон)
+    this.camera.lookAt(carPos.x, 0, carPos.z);
+    
+    console.log('[MapScene] Camera initialized at car position:', { 
+      carPos: { x: carPos.x, y: carPos.y, z: carPos.z },
+      cameraPos: { x: this.camera.position.x, y: this.camera.position.y, z: this.camera.position.z }
+    });
   }
 
   private createRouteMesh(curve: THREE.Curve<THREE.Vector3>, color: number, radius: number, radialSegments: number): THREE.Mesh {
     const tube = new THREE.TubeGeometry(curve as THREE.CatmullRomCurve3, 100, radius, radialSegments, false);
-    const material = new THREE.MeshStandardMaterial({ color, roughness: 0.6, metalness: 0.1 });
+    // В DEBUG_MODE показываем цветные маршруты, иначе делаем невидимыми (но кликабельными)
+    const material = new THREE.MeshStandardMaterial({ 
+      color, 
+      roughness: 0.6, 
+      metalness: 0.1,
+      transparent: !DEBUG_MODE,
+      opacity: DEBUG_MODE ? 1 : 0,
+      visible: DEBUG_MODE
+    });
     const mesh = new THREE.Mesh(tube, material);
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
+    mesh.castShadow = DEBUG_MODE;
+    mesh.receiveShadow = DEBUG_MODE;
     return mesh;
   }
 
@@ -440,14 +530,12 @@ export default class MapScene {
     let route: THREE.Vector3[] = [];
     
     if (routeId === 'straight') {
-      // Прямой маршрут: от текущей позиции до конца (победа)
+      // Прямой маршрут: остановка перед экскаватором
       route = [
         this.car.getPosition(),
         getWaypointPosition('road-bottom-2'),
         getWaypointPosition('intersection-center'),
-        getWaypointPosition('road-top-1'),
-        getWaypointPosition('road-top-3'),
-        getWaypointPosition('road-top-5'),
+        config.stopStraightPosition, // Остановка перед экскаватором
       ];
     } else if (routeId === 'left') {
       // Левый маршрут: остановка перед пробкой
@@ -458,12 +546,14 @@ export default class MapScene {
         config.stopLeftPosition, // Остановка перед препятствием
       ];
     } else if (routeId === 'right') {
-      // Правый маршрут: остановка перед знаком STOP
+      // Правый маршрут: едет до конца (победа)
       route = [
         this.car.getPosition(),
         getWaypointPosition('road-bottom-2'),
         getWaypointPosition('intersection-center'),
-        config.stopRightPosition, // Остановка перед препятствием
+        getWaypointPosition('road-right-1'),
+        getWaypointPosition('road-right-3'),
+        getWaypointPosition('road-right-5'),
       ];
     }
     
@@ -709,11 +799,11 @@ export default class MapScene {
       
       console.log('[MapScene] 💡 Light model and texture loaded');
       
-      // Центральная точка перекрестка (между -2.0 и 3.0)
-      const centerX = (-2.0 + 3.0) / 2; // = 0.5
-      const centerZ = (-2.0 + 3.0) / 2; // = 0.5
+      // Центр перекрестка - все фонари смотрят сюда
+      const centerX = 0;
+      const centerZ = 0;
       
-      // Позиции фонарей на углах перекрестка (где бордюры встречаются)
+      // Позиции фонарей на углах перекрестка
       const lightPositions = [
         { x: 2.5, z: 2.5 },   // правый верхний
         { x: -2.5, z: 2.5 },  // левый верхний
@@ -723,11 +813,6 @@ export default class MapScene {
       
       lightPositions.forEach((pos) => {
         const light = gltf.scene.clone();
-        
-        // Вычисляем угол поворота к центру
-        const dx = centerX - pos.x;
-        const dz = centerZ - pos.z;
-        const rotation = Math.atan2(dx, dz);
         
         // Применяем текстуру ко всем материалам
         light.traverse((child) => {
@@ -761,7 +846,11 @@ export default class MapScene {
         
         // Позиционируем
         light.position.set(pos.x, 0, pos.z);
-        light.rotation.y = rotation;
+        
+        // Вычисляем угол поворота к центру перекрестка и разворачиваем на 180°
+        const dx = centerX - pos.x;
+        const dz = centerZ - pos.z;
+        light.rotation.y = Math.atan2(dx, dz) + Math.PI; // +180°
         
         this.scene.add(light);
       });
@@ -770,6 +859,228 @@ export default class MapScene {
       
     } catch (error) {
       console.error('[MapScene] ❌ Failed to load street lights:', error);
+    }
+  }
+
+  /**
+   * Добавляет пробку (несколько машин) на левую дорогу
+   */
+  private async addTrafficJam(): Promise<void> {
+    console.log('[MapScene] 🚗 Adding traffic jam...');
+    
+    try {
+      const gltfLoader = new GLTFLoader();
+      const textureLoader = new THREE.TextureLoader();
+      
+      // Параллельная загрузка моделей машин и текстуры
+      const [sedanGltf, suvGltf, carTexture] = await Promise.all([
+        gltfLoader.loadAsync(sedanUrl),
+        gltfLoader.loadAsync(suvUrl),
+        textureLoader.loadAsync(carTextureUrl),
+      ]);
+      
+      // Настройка текстуры
+      carTexture.colorSpace = THREE.SRGBColorSpace;
+      carTexture.flipY = false;
+      
+      console.log('[MapScene] 🚗 Traffic jam models and texture loaded');
+      
+      // Получаем конфигурацию для текущей ориентации
+      const config = getGameConfig(window.innerWidth, window.innerHeight);
+      const obstaclePos = config.obstacleLeftPosition;
+      
+      // Создаем группу для пробки
+      this.trafficJam = new THREE.Group();
+      
+      // Массив моделей для пробки (2 машины в ряд с отступами)
+      const carModels = [
+        { gltf: sedanGltf, offsetX: -3 },    // первая машина (с отступом от позиции остановки)
+        { gltf: suvGltf, offsetX: -6.5 },    // вторая машина (с отступом 3.5 от первой)
+      ];
+      
+      carModels.forEach(({ gltf, offsetX }) => {
+        const car = gltf.scene.clone();
+        
+        // Применяем текстуру ко всем материалам
+        car.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            const mat = child.material as THREE.MeshStandardMaterial;
+            if (mat) {
+              // Удаляем вершинные цвета
+              if (child.geometry.attributes.color) {
+                child.geometry.deleteAttribute('color');
+              }
+              
+              mat.map = carTexture;
+              mat.needsUpdate = true;
+            }
+            
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
+        
+        // Автонормализация размера
+        const box = new THREE.Box3().setFromObject(car);
+        const size = new THREE.Vector3();
+        box.getSize(size);
+        
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const targetLength = 2.5; // размер машины в пробке
+        const scale = targetLength / maxDim;
+        car.scale.setScalar(scale);
+        
+        // Позиционируем машину по центру левой дороги (Z=0)
+        car.position.set(
+          obstaclePos.x + offsetX, // вдоль левой дороги с отступом
+          0.45, // чуть ниже игровой машинки
+          0     // посередине дороги
+        );
+        
+        // Поворачиваем машину лицом вперед по направлению движения влево
+        car.rotation.y = -Math.PI / 2; // -90° влево (в направлении -X)
+        
+        this.trafficJam!.add(car);
+      });
+      
+      this.scene.add(this.trafficJam!);
+      
+      console.log(`[MapScene] ✅ Traffic jam added with ${carModels.length} cars at left road`);
+      
+    } catch (error) {
+      console.error('[MapScene] ❌ Failed to load traffic jam:', error);
+    }
+  }
+
+  /**
+   * Добавляет препятствие на прямую дорогу сверху (экскаватор + конусы)
+   */
+  private async addRoadObstacle(): Promise<void> {
+    console.log('[MapScene] 🚧 Adding road obstacle (straight road)...');
+    
+    try {
+      const gltfLoader = new GLTFLoader();
+      const textureLoader = new THREE.TextureLoader();
+      
+      // Параллельная загрузка экскаватора и текстуры
+      const [tractorGltf, carTexture] = await Promise.all([
+        gltfLoader.loadAsync(tractorShovelUrl),
+        textureLoader.loadAsync(carTextureUrl),
+      ]);
+      
+      // Настройка текстуры
+      carTexture.colorSpace = THREE.SRGBColorSpace;
+      carTexture.flipY = false;
+      
+      console.log('[MapScene] 🚧 Road obstacle model and texture loaded');
+      
+      // Получаем конфигурацию для текущей ориентации
+      const config = getGameConfig(window.innerWidth, window.innerHeight);
+      const obstaclePos = config.obstacleStraightPosition; // Теперь на прямой дороге (сверху)
+      
+      // Создаем группу для препятствия
+      this.roadObstacle = new THREE.Group();
+      
+      // Добавляем экскаватор
+      const tractor = tractorGltf.scene.clone();
+      
+      // Применяем текстуру ко всем материалам
+      tractor.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          const mat = child.material as THREE.MeshStandardMaterial;
+          if (mat) {
+            // Удаляем вершинные цвета
+            if (child.geometry.attributes.color) {
+              child.geometry.deleteAttribute('color');
+            }
+            
+            mat.map = carTexture;
+            mat.needsUpdate = true;
+          }
+          
+          child.castShadow = true;
+          child.receiveShadow = true;
+        }
+      });
+      
+      // Автонормализация размера экскаватора
+      const box = new THREE.Box3().setFromObject(tractor);
+      const size = new THREE.Vector3();
+      box.getSize(size);
+      
+      const maxDim = Math.max(size.x, size.y, size.z);
+      const targetLength = 2.5; // уменьшенный размер экскаватора
+      const scale = targetLength / maxDim;
+      tractor.scale.setScalar(scale);
+      
+      // Позиционируем экскаватор по центру прямой дороги (X=0, вертикальная дорога)
+      tractor.position.set(
+        0,     // посередине вертикальной дороги
+        0.45,  // чуть ниже
+        obstaclePos.z - 6 // дальше от позиции остановки (с отступом от конусов)
+      );
+      
+      // Поворачиваем экскаватор лицом вниз (к машинке)
+      tractor.rotation.y = Math.PI; // 180° вниз
+      
+      this.roadObstacle!.add(tractor);
+      
+      // Добавляем визуал "разбитой дороги" (дорожные конусы)
+      const coneGeometry = new THREE.ConeGeometry(0.25, 0.8, 8);
+      const coneMaterial = new THREE.MeshStandardMaterial({ 
+        color: 0xff4400, // яркий оранжевый
+        roughness: 0.6,
+        metalness: 0.1
+      });
+      
+      // Расставляем конусы с отступом от машинки и экскаватора (вдоль оси Z)
+      const conePositions = [
+        { x: 0.5, z: obstaclePos.z - 2.5 },  // первый ряд (ближе к машинке)
+        { x: -0.5, z: obstaclePos.z - 2.5 },
+        { x: 0.5, z: obstaclePos.z - 4 },    // второй ряд (ближе к экскаватору)
+        { x: -0.5, z: obstaclePos.z - 4 },
+      ];
+      
+      conePositions.forEach((pos) => {
+        const coneGroup = new THREE.Group();
+        
+        // Основной конус (оранжевый) - поднимаем на половину высоты чтобы основание было на земле
+        const cone = new THREE.Mesh(coneGeometry, coneMaterial);
+        cone.position.set(0, 0.4, 0); // половина высоты (0.8 / 2)
+        cone.castShadow = true;
+        cone.receiveShadow = true;
+        coneGroup.add(cone);
+        
+        // Белые полосы (2 тонких кольца)
+        const stripeMaterial = new THREE.MeshStandardMaterial({ 
+          color: 0xffffff,
+          roughness: 0.6
+        });
+        
+        const stripe1 = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.2, 0.22, 0.08, 8),
+          stripeMaterial
+        );
+        stripe1.position.set(0, 0.25, 0);
+        coneGroup.add(stripe1);
+        
+        const stripe2 = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.14, 0.16, 0.08, 8),
+          stripeMaterial
+        );
+        stripe2.position.set(0, 0.55, 0);
+        coneGroup.add(stripe2);
+        
+        coneGroup.position.set(pos.x, 0.05, pos.z); // немного над дорогой
+        this.roadObstacle!.add(coneGroup);
+      });
+      
+      this.scene.add(this.roadObstacle!);
+      
+      console.log(`[MapScene] ✅ Road obstacle added at straight road (top)`);
+      
+    } catch (error) {
+      console.error('[MapScene] ❌ Failed to load road obstacle:', error);
     }
   }
 
@@ -953,6 +1264,63 @@ export default class MapScene {
         const config = getGameConfig(width, height);
         this.car.setPosition(config.carStartPosition);
         console.log(`[MapScene] Car position adapted to ${newOrientation}`);
+        
+        // Сразу центрируем камеру на новой позиции машинки
+        const carPos = this.car.getPosition();
+        const cameraOffset = 10; // смещение позади машинки для изометрического вида
+        
+        this.camera.position.x = carPos.x;
+        this.camera.position.z = carPos.z + cameraOffset; // позади машинки
+        
+        // Камера должна смотреть на машинку (создает наклон)
+        this.camera.lookAt(carPos.x, 0, carPos.z);
+      }
+      
+      // Адаптация позиции пробки
+      if (this.trafficJam) {
+        const config = getGameConfig(width, height);
+        const obstaclePos = config.obstacleLeftPosition;
+        
+        // Обновляем позицию каждой машины в пробке (в ряд по оси X)
+        const offsets = [-3, -6.5]; // отступы для двух машин (3.5 между ними)
+        this.trafficJam.children.forEach((car, index) => {
+          const offsetX = offsets[index] ?? -3;
+          car.position.set(obstaclePos.x + offsetX, 0.45, 0);
+        });
+        
+        console.log(`[MapScene] Traffic jam position adapted to ${newOrientation}`);
+      }
+      
+      // Адаптация позиции препятствия на прямой дороге (сверху)
+      if (this.roadObstacle) {
+        const config = getGameConfig(width, height);
+        const obstaclePos = config.obstacleStraightPosition;
+        
+        // Обновляем позицию экскаватора (первый ребёнок)
+        if (this.roadObstacle.children[0]) {
+          this.roadObstacle.children[0].position.set(0, 0.45, obstaclePos.z - 6);
+        }
+        
+        // Обновляем позицию конусов (остальные дети) - вдоль оси Z
+        const coneOffsets = [
+          { x: 0.5, z: -2.5 },   // первый ряд
+          { x: -0.5, z: -2.5 },
+          { x: 0.5, z: -4 },     // второй ряд
+          { x: -0.5, z: -4 },
+        ];
+        for (let i = 1; i < this.roadObstacle.children.length; i++) {
+          const offset = coneOffsets[i - 1];
+          const child = this.roadObstacle.children[i];
+          if (offset && child) {
+            child.position.set(
+              offset.x,
+              0.35,
+              obstaclePos.z + offset.z
+            );
+          }
+        }
+        
+        console.log(`[MapScene] Road obstacle position adapted to ${newOrientation}`);
       }
     }
 

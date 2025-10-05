@@ -56,49 +56,10 @@
       padding: 0;
     }
 
-    /* Прелоадер */
-    #loader {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      text-align: center;
-      z-index: 1000;
-    }
-
-    .spinner {
-      width: clamp(2rem, 8vw, 4rem);
-      height: clamp(2rem, 8vw, 4rem);
-      border: clamp(0.2rem, 0.5vw, 0.4rem) solid rgba(255, 255, 255, 0.3);
-      border-top-color: #0066FF;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin: 0 auto clamp(0.5rem, 2vw, 1rem);
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    #loader p {
-      font-size: clamp(0.8rem, 2vw, 1rem);
-      color: rgba(255, 255, 255, 0.8);
-    }
-
-    /* Скрытие прелоадера */
-    .hidden {
-      display: none !important;
-    }
   </style>
 </head>
 <body>
   <div id="app">
-    <!-- Прелоадер -->
-    <div id="loader">
-      <div class="spinner"></div>
-      <p>Загрузка...</p>
-    </div>
-
     <!-- Canvas для Three.js рендера -->
     <canvas id="game-canvas"></canvas>
 

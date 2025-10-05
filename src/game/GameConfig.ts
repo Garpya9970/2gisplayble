@@ -13,11 +13,11 @@ export interface GameOrientationConfig {
   
   // Позиции препятствий
   obstacleLeftPosition: THREE.Vector3; // Пробка на левом маршруте
-  obstacleRightPosition: THREE.Vector3; // Знак STOP на правом маршруте
+  obstacleStraightPosition: THREE.Vector3; // Экскаватор на прямом маршруте (сверху)
   
   // Позиции остановки машинки
   stopLeftPosition: THREE.Vector3; // Где останавливается машинка слева
-  stopRightPosition: THREE.Vector3; // Где останавливается машинка справа
+  stopStraightPosition: THREE.Vector3; // Где останавливается машинка на прямом маршруте
 }
 
 /**
@@ -28,26 +28,26 @@ export const GAME_CONFIG: Record<Orientation, GameOrientationConfig> = {
     // Стартовая позиция: текущая (start-3, Z=20)
     carStartPosition: getWaypointPosition('start-3'),
     
-    // Препятствия между точками road-left-1 и road-left-2
-    obstacleLeftPosition: getPositionBetween('road-left-1', 'road-left-2'),
-    obstacleRightPosition: getPositionBetween('road-right-1', 'road-right-2'),
+    // Препятствия
+    obstacleLeftPosition: getPositionBetween('road-left-1', 'road-left-2'), // Пробка слева
+    obstacleStraightPosition: getPositionBetween('road-top-1', 'road-top-2'), // Экскаватор сверху
     
     // Остановка машинки чуть раньше препятствий
     stopLeftPosition: getPositionBetween('road-left-1', 'road-left-2', 0.4),
-    stopRightPosition: getPositionBetween('road-right-1', 'road-right-2', 0.4),
+    stopStraightPosition: getPositionBetween('road-top-1', 'road-top-2', 0.4),
   },
   
   landscape: {
     // Стартовая позиция: road-bottom-1 (Z=12)
     carStartPosition: getWaypointPosition('road-bottom-1'),
     
-    // Препятствия между точками road-left-3 и road-left-4
-    obstacleLeftPosition: getPositionBetween('road-left-3', 'road-left-4'),
-    obstacleRightPosition: getPositionBetween('road-right-3', 'road-right-4'),
+    // Препятствия
+    obstacleLeftPosition: getPositionBetween('road-left-3', 'road-left-4'), // Пробка слева
+    obstacleStraightPosition: getPositionBetween('road-top-1', 'road-top-2'), // Экскаватор сверху
     
     // Остановка машинки чуть раньше препятствий
     stopLeftPosition: getPositionBetween('road-left-3', 'road-left-4', 0.4),
-    stopRightPosition: getPositionBetween('road-right-3', 'road-right-4', 0.4),
+    stopStraightPosition: getPositionBetween('road-top-1', 'road-top-2', 0.4),
   },
 };
 

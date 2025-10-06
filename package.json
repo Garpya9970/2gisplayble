@@ -8,6 +8,7 @@
     "build": "tsc && vite build",
     "build:mintegral": "npm run build && tsc && vite build --config vite.config.mintegral.ts",
     "build:bigo": "npm run build && tsc && vite build --config vite.config.bigo.ts",
+    "build:unity": "npm run build && tsc && vite build --config vite.config.unity.ts",
     "preview": "vite preview",
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix"
